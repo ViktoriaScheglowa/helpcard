@@ -1,47 +1,265 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Регистрация{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/register.css' %}">
+{% endblock %}
+
 {% block content %}
-<div style="max-width: 500px; margin: 0 auto;">
-    <h1>📝 Регистрация</h1>
-
-    <form method="post" action="{% url 'users:register' %}">
-        {% csrf_token %}
-
-        <div class="form-group">
-            <label for="username">Имя пользователя:</label>
-            <input type="text" id="username" name="username" required>
+<div class="register-container">
+    <div class="register-card">
+        <div class="register-header">
+            <div class="register-icon">📝</div>
+            <h1>Создать аккаунт</h1>
+            <p>Присоединяйтесь к народной карте помощи</p>
         </div>
 
-        <div class="form-group">
-            <label for="email">Email:</label>
-            <input type="email" id="email" name="email" required>
+        <form method="post" class="register-form" id="registerForm">
+            {% csrf_token %}
+
+            <!-- Имя пользователя -->
+            <div class="form-group">
+                <label for="id_username">
+                    <span class="label-icon">👤</span>
+                    Имя пользователя
+                </label>
+                <input type="text"
+                       name="username"
+                       id="id_username"
+                       class="form-control"
+                       placeholder="Введите имя пользователя"
+                       value="{{ form_data.username|default:'' }}"
+                       required>
+                <div class="help-text">
+                    Обязательное поле. Не более 150 символов.
+                </div>
+            </div>
+
+            <!-- Email -->
+            <div class="form-group">
+                <label for="id_email">
+                    <span class="label-icon">📧</span>
+                    Email
+                </label>
+                <input type="email"
+                       name="email"
+                       id="id_email"
+                       class="form-control"
+                       placeholder="Введите email"
+                       value="{{ form_data.email|default:'' }}"
+                       required>
+            </div>
+
+            <!-- Телефон -->
+            <div class="form-group">
+                <label for="id_phone">
+                    <span class="label-icon">📱</span>
+                    Телефон
+                </label>
+                <input type="tel"
+                       name="phone"
+                       id="id_phone"
+                       class="form-control"
+                       placeholder="+7 (___) ___-__-__"
+                       value="{{ form_data.phone|default:'' }}">
+                <div class="help-text">
+                    Необязательное поле. Для связи с исполнителями.
+                </div>
+            </div>
+
+            <!-- Выбор роли -->
+            <div class="form-group">
+                <label>
+                    <span class="label-icon">👥</span>
+                    Выберите вашу роль
+                </label>
+                <div class="role-selector">
+                    <div class="role-option">
+                        <input type="radio"
+                               name="role"
+                               id="role_user"
+                               value="user"
+                               {% if form_data.role == 'user' or not form_data.role %}checked{% endif %}>
+                        <label for="role_user" class="role-card">
+                            <span class="role-icon">🏠</span>
+                            <div class="role-info">
+                                <span class="role-title">Житель</span>
+                                <span class="role-description">Могу сообщать о проблемах и следить за их решением</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="role-option">
+                        <input type="radio"
+                               name="role"
+                               id="role_executor"
+                               value="executor"
+                               {% if form_data.role == 'executor' %}checked{% endif %}>
+                        <label for="role_executor" class="role-card">
+                            <span class="role-icon">🔧</span>
+                            <div class="role-info">
+                                <span class="role-title">Исполнитель</span>
+                                <span class="role-description">Могу брать проблемы в работу и отмечать их как решенные</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Пароль -->
+            <div class="form-group">
+                <label for="id_password1">
+                    <span class="label-icon">🔒</span>
+                    Пароль
+                </label>
+                <input type="password"
+                       name="password1"
+                       id="id_password1"
+                       class="form-control"
+                       placeholder="Введите пароль"
+                       required>
+
+                <!-- Требования к паролю -->
+                <div class="password-requirements" id="passwordRequirements">
+                    <p>Требования к паролю:</p>
+                    <ul>
+                        <li id="req-length">Минимум 8 символов</li>
+                        <li id="req-digit">Хотя бы одна цифра</li>
+                        <li id="req-upper">Хотя бы одна заглавная буква</li>
+                        <li id="req-lower">Хотя бы одна строчная буква</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Подтверждение пароля -->
+            <div class="form-group">
+                <label for="id_password2">
+                    <span class="label-icon">🔒</span>
+                    Подтверждение пароля
+                </label>
+                <input type="password"
+                       name="password2"
+                       id="id_password2"
+                       class="form-control"
+                       placeholder="Повторите пароль"
+                       required>
+                <div id="passwordMatch" class="field-error" style="display: none;">
+                    Пароли не совпадают
+                </div>
+            </div>
+
+            <button type="submit" class="register-button" id="registerButton">
+                <span>Зарегистрироваться</span>
+                <span class="button-arrow">→</span>
+            </button>
+        </form>
+
+        <div class="register-footer">
+            <p>Уже есть аккаунт?</p>
+            <a href="{% url 'login' %}" class="login-link">
+                <span>Войти в систему</span>
+                <span class="link-arrow">→</span>
+            </a>
         </div>
-
-        <div class="form-group">
-            <label for="password">Пароль:</label>
-            <input type="password" id="password" name="password" required>
-        </div>
-
-        <div class="form-group">
-            <label for="password2">Подтверждение пароля:</label>
-            <input type="password" id="password2" name="password2" required>
-        </div>
-
-        <div class="form-group">
-            <label for="role">Роль:</label>
-            <select id="role" name="role">
-                <option value="user">Житель (могу сообщать о проблемах)</option>
-                <option value="executor">Исполнитель (могу решать проблемы)</option>
-            </select>
-        </div>
-
-        <button type="submit" class="btn btn-success">Зарегистрироваться</button>
-    </form>
-
-    <p style="margin-top: 20px;">
-        Уже есть аккаунт? <a href="{% url 'login' %}">Войдите</a>
-    </p>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const password1 = document.getElementById('id_password1');
+    const password2 = document.getElementById('id_password2');
+    const passwordMatch = document.getElementById('passwordMatch');
+
+    // Элементы требований к паролю
+    const reqLength = document.getElementById('req-length');
+    const reqDigit = document.getElementById('req-digit');
+    const reqUpper = document.getElementById('req-upper');
+    const reqLower = document.getElementById('req-lower');
+
+    // Функция проверки пароля
+    function checkPasswordStrength() {
+        const password = password1.value;
+
+        // Проверка длины
+        if (password.length >= 8) {
+            reqLength.classList.add('valid');
+            reqLength.classList.remove('invalid');
+        } else {
+            reqLength.classList.remove('valid');
+            reqLength.classList.add('invalid');
+        }
+
+        // Проверка наличия цифры
+        if (/\d/.test(password)) {
+            reqDigit.classList.add('valid');
+            reqDigit.classList.remove('invalid');
+        } else {
+            reqDigit.classList.remove('valid');
+            reqDigit.classList.add('invalid');
+        }
+
+        // Проверка наличия заглавной буквы
+        if (/[A-Z]/.test(password)) {
+            reqUpper.classList.add('valid');
+            reqUpper.classList.remove('invalid');
+        } else {
+            reqUpper.classList.remove('valid');
+            reqUpper.classList.add('invalid');
+        }
+
+        // Проверка наличия строчной буквы
+        if (/[a-z]/.test(password)) {
+            reqLower.classList.add('valid');
+            reqLower.classList.remove('invalid');
+        } else {
+            reqLower.classList.remove('valid');
+            reqLower.classList.add('invalid');
+        }
+    }
+
+    // Функция проверки совпадения паролей
+    function checkPasswordMatch() {
+        if (password2.value.length > 0) {
+            if (password1.value !== password2.value) {
+                passwordMatch.style.display = 'flex';
+                return false;
+            } else {
+                passwordMatch.style.display = 'none';
+                return true;
+            }
+        } else {
+            passwordMatch.style.display = 'none';
+            return true;
+        }
+    }
+
+    // Слушатели событий
+    if (password1) {
+        password1.addEventListener('input', function() {
+            checkPasswordStrength();
+            checkPasswordMatch();
+        });
+    }
+
+    if (password2) {
+        password2.addEventListener('input', checkPasswordMatch);
+    }
+
+    // Валидация перед отправкой
+    document.getElementById('registerForm').addEventListener('submit', function(e) {
+        const allValid = document.querySelectorAll('#passwordRequirements li.valid').length === 4;
+        const passwordsMatch = password1.value === password2.value;
+
+        if (!allValid) {
+            e.preventDefault();
+            alert('Пожалуйста, убедитесь что пароль соответствует всем требованиям');
+        } else if (!passwordsMatch) {
+            e.preventDefault();
+            alert('Пароли не совпадают');
+        }
+    });
+});
+</script>
 {% endblock %}

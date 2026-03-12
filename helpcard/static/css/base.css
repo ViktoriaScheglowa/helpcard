@@ -16,52 +16,133 @@ body {
     padding: 0 1rem;
 }
 
-/* Сообщения */
-.messages {
-    list-style: none;
-    margin-bottom: 1rem;
+/* Контейнер для сообщений - исправленная версия */
+.messages-container {
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    z-index: 9999;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
 }
 
-.messages li {
-    padding: 1rem;
-    border-radius: 30px;
-    margin-bottom: 0.5rem;
-    animation: slideIn 0.3s ease-out;
+.message-item {
+    pointer-events: auto;
+    animation: slideInRight 0.3s ease-out;
+    margin-bottom: 0;
 }
 
-@keyframes slideIn {
+@keyframes slideInRight {
     from {
+        transform: translateX(100%);
         opacity: 0;
-        transform: translateY(-10px);
     }
     to {
+        transform: translateX(0);
         opacity: 1;
-        transform: translateY(0);
     }
 }
 
-.messages .success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 2px solid #c3e6cb;
+/* Скрываем старые стили messages */
+.messages {
+    display: none;
 }
 
-.messages .error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 2px solid #f5c6cb;
+/* Стили для уведомления об успехе */
+.success-notification {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border: 2px solid #a5d6a7;
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+    min-width: 300px;
 }
 
-.messages .warning {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 2px solid #ffeeba;
+.success-icon {
+    font-size: 2.5rem;
+    animation: bounce 0.5s ease-out;
 }
 
-.messages .info {
-    background-color: #d1ecf1;
-    color: #0c5460;
-    border: 2px solid #bee5eb;
+@keyframes bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+.success-content {
+    flex: 1;
+}
+
+.success-title {
+    color: #2e7d32;
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.success-details {
+    display: flex;
+    gap: 15px;
+    color: #388e3c;
+    font-size: 0.95rem;
+    flex-wrap: wrap;
+}
+
+.success-details span {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 4px 10px;
+    border-radius: 30px;
+}
+
+/* Стили для других типов сообщений */
+.message-item.info .success-notification {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-color: #90caf9;
+}
+
+.message-item.info .success-title {
+    color: #0d47a1;
+}
+
+.message-item.info .success-details span {
+    background: rgba(255, 255, 255, 0.5);
+    color: #1565c0;
+}
+
+.message-item.warning .success-notification {
+    background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+    border-color: #ffb74d;
+}
+
+.message-item.warning .success-title {
+    color: #e65100;
+}
+
+.message-item.warning .success-details span {
+    background: rgba(255, 255, 255, 0.5);
+    color: #f57c00;
+}
+
+.message-item.error .success-notification {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    border-color: #ef9a9a;
+}
+
+.message-item.error .success-title {
+    color: #b71c1c;
+}
+
+.message-item.error .success-details span {
+    background: rgba(255, 255, 255, 0.5);
+    color: #c62828;
 }
 
 /* Кнопки */
@@ -195,7 +276,7 @@ body {
 .mb-4 { margin-bottom: 2rem; }
 .mb-5 { margin-bottom: 3rem; }
 
-/* Адаптивность */
+/* Адаптивность для мобильных */
 @media (max-width: 768px) {
     .container {
         padding: 0 0.5rem;
@@ -207,5 +288,25 @@ body {
 
     .btn {
         padding: 10px 20px;
+    }
+
+    .messages-container {
+        left: 20px;
+        right: 20px;
+        max-width: none;
+    }
+
+    .success-notification {
+        padding: 15px;
+        min-width: auto;
+    }
+
+    .success-details {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .success-icon {
+        font-size: 2rem;
     }
 }

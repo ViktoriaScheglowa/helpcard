@@ -2,9 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
-from datetime import timedelta
-from django.conf import settings
+from datetime import timedelta, datetime
+import folium
 import json
+from django.conf import settings
 from .models import Problem, Category
 
 
@@ -12,9 +13,6 @@ def index(request):
     """Главная страница с картой"""
     # Получаем параметры фильтрации из GET запроса
     selected_categories = request.GET.getlist('category')
-
-    # Получаем выбранный населенный пункт
-    selected_location = request.GET.get('location', 'mokshan')
 
     # Базовый запрос
     problems = Problem.objects.all()
@@ -30,26 +28,31 @@ def index(request):
     # Координаты центров населенных пунктов
     locations = {
         'mokshan': [53.4365, 44.6106],  # Мокшан
-        'penza': [53.2001, 45.0046],  # Пенза
-        'ramzai': [53.3365, 44.7333],  # Рамзай
     }
 
     # Выбираем центр карты
-    center = locations.get(selected_location, locations['mokshan'])
+    center = locations['mokshan']
 
     # Получаем все категории для фильтра
     categories = Category.objects.all()
 
+    # Добавляем счетчик проблем для каждой категории
+    for category in categories:
+        category.problem_count = Problem.objects.filter(category=category).count()
+
     # Создаем JSON с проблемами для передачи в JavaScript
     problems_data = []
     for problem in problems:
+        # Определяем цвет маркера
+        color = problem.get_color()
+
+        # Создаем словарь с данными проблемы
         problem_data = {
             'id': problem.id,
             'lat': problem.latitude,
             'lng': problem.longitude,
-            'color': problem.get_color(),
+            'color': color,
             'category': problem.get_category_display(),
-            'description': problem.description[:100] + '...' if len(problem.description) > 100 else problem.description,
             'full_description': problem.description,
             'status': problem.get_status_display(),
             'created_at': problem.created_at.strftime('%d.%m.%Y'),
@@ -66,9 +69,6 @@ def index(request):
                     problem_data['can_complete'] = True
 
         problems_data.append(problem_data)
-
-    print(f"DEBUG: API Key = {settings.YANDEX_MAPS_API_KEY}")  # Временная отладка
-    print(f"DEBUG: Center = {center}")
 
     context = {
         'api_key': settings.YANDEX_MAPS_API_KEY,
@@ -93,8 +93,6 @@ def add_problem(request):
             address = request.POST.get('address', '')
             category_id = request.POST.get('category_id')
             description = request.POST.get('description')
-
-            print(f"POST данные: lat={latitude}, lng={longitude}, address={address}, category={category_id}")
 
             # Проверяем обязательные поля
             if not category_id:
@@ -134,12 +132,36 @@ def add_problem(request):
             )
 
             problem.save()
-            messages.success(request, 'Проблема успешно добавлена!')
+
+            # Красивое уведомление об успехе
+            success_message = (
+                '<div class="success-notification">'
+                '<div class="success-icon">✅</div>'
+                '<div class="success-content">'
+                '<div class="success-title">Проблема успешно добавлена!</div>'
+                '<div class="success-details">'
+                f'<span>ID: #{problem.id}</span>'
+                f'<span>{problem.get_category_display()}</span>'
+                '</div>'
+                '</div>'
+                '</div>'
+            )
+            messages.success(request, success_message)
             return redirect('helpcard:problem_detail', problem_id=problem.id)
 
         except Exception as e:
-            messages.error(request, f'Ошибка при добавлении проблемы: {e}')
-            print(f"Ошибка: {e}")
+            error_message = (
+                '<div class="success-notification" style="background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-color: #ef9a9a;">'
+                '<div class="success-icon">❌</div>'
+                '<div class="success-content">'
+                '<div class="success-title" style="color: #b71c1c;">Ошибка!</div>'
+                '<div class="success-details">'
+                f'<span>{str(e)}</span>'
+                '</div>'
+                '</div>'
+                '</div>'
+            )
+            messages.error(request, error_message)
             return redirect('helpcard:index')
 
     return redirect('helpcard:index')
@@ -161,29 +183,82 @@ def problem_detail(request, problem_id):
 def take_problem(request, problem_id):
     """Взять проблему в работу (для исполнителей)"""
     if request.user.role not in ['executor', 'admin']:
-        messages.error(request, 'Только исполнители могут брать задачи в работу')
+        error_message = (
+            '<div class="success-notification" style="background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-color: #ef9a9a;">'
+            '<div class="success-icon">⚠️</div>'
+            '<div class="success-content">'
+            '<div class="success-title" style="color: #b71c1c;">Доступ запрещен</div>'
+            '<div class="success-details">'
+            '<span>Только исполнители могут брать задачи в работу</span>'
+            '</div>'
+            '</div>'
+            '</div>'
+        )
+        messages.error(request, error_message)
         return redirect('helpcard:index')
 
     problem = get_object_or_404(Problem, id=problem_id)
 
     if problem.status != 'new':
-        messages.error(request, 'Эта задача уже взята в работу или решена')
+        error_message = (
+            '<div class="success-notification" style="background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-color: #ef9a9a;">'
+            '<div class="success-icon">⚠️</div>'
+            '<div class="success-content">'
+            '<div class="success-title" style="color: #b71c1c;">Задача недоступна</div>'
+            '<div class="success-details">'
+            '<span>Эта задача уже взята в работу или решена</span>'
+            '</div>'
+            '</div>'
+            '</div>'
+        )
+        messages.error(request, error_message)
         return redirect('helpcard:index')
 
     if request.method == 'POST':
-        promised_days = int(request.POST.get('promised_days', 3))
+        # Получаем дату из формы
+        deadline = request.POST.get('deadline')
+        comment = request.POST.get('comment', '')
 
+        # Преобразуем строку в дату
+        deadline_date = datetime.strptime(deadline, '%Y-%m-%d').date()
+
+        # Обновляем проблему
         problem.status = 'in_progress'
         problem.assigned_to = request.user
         problem.assigned_at = timezone.now()
-        problem.promised_deadline = timezone.now() + timedelta(days=promised_days)
+        problem.promised_deadline = deadline_date
+        if comment:
+            problem.executor_comment = comment
+
         problem.save()
 
-        messages.success(request, f'Задача взята в работу! Срок: {promised_days} дней')
+        # Рассчитываем количество дней
+        days = (deadline_date - timezone.now().date()).days
+
+        # Формируем красивое сообщение об успехе
+        success_message = (
+            f'<div class="success-notification">'
+            f'<div class="success-icon">✅</div>'
+            f'<div class="success-content">'
+            f'<div class="success-title">Задача взята в работу!</div>'
+            f'<div class="success-details">'
+            f'<span class="deadline">📅 Срок: {deadline_date.strftime("%d.%m.%Y")}</span>'
+            f'<span class="days">⏱️ {days} дн.</span>'
+            f'</div>'
+            f'</div>'
+            f'</div>'
+        )
+
+        messages.success(request, success_message)
         return redirect('helpcard:index')
 
     # GET запрос - показываем форму
-    return render(request, 'helpcard/take_problem.html', {'problem': problem})
+    context = {
+        'problem': problem,
+        'today': timezone.now().date().isoformat(),
+        'default_date': (timezone.now().date() + timedelta(days=3)).isoformat(),
+    }
+    return render(request, 'helpcard/take_problem.html', context)
 
 
 @login_required
@@ -193,11 +268,41 @@ def complete_problem(request, problem_id):
 
     # Проверяем права
     if request.user.role != 'admin' and problem.assigned_to != request.user:
-        messages.error(request, 'У вас нет прав отметить эту задачу как решенную')
+        error_message = (
+            '<div class="success-notification" style="background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%); border-color: #ef9a9a;">'
+            '<div class="success-icon">⚠️</div>'
+            '<div class="success-content">'
+            '<div class="success-title" style="color: #b71c1c;">Доступ запрещен</div>'
+            '<div class="success-details">'
+            '<span>У вас нет прав отметить эту задачу как решенную</span>'
+            '</div>'
+            '</div>'
+            '</div>'
+        )
+        messages.error(request, error_message)
         return redirect('helpcard:index')
 
-    problem.status = 'solved'
-    problem.save()
+    if request.method == 'POST':
+        problem.status = 'solved'
+        problem.save()
 
-    messages.success(request, 'Задача отмечена как решенная!')
-    return redirect('helpcard:index')
+        # Красивое уведомление об успехе
+        success_message = (
+            '<div class="success-notification">'
+            '<div class="success-icon">🎉</div>'
+            '<div class="success-content">'
+            '<div class="success-title">Задача отмечена как решенная!</div>'
+            '<div class="success-details">'
+            '<span>Спасибо за вашу работу!</span>'
+            '</div>'
+            '</div>'
+            '</div>'
+        )
+        messages.success(request, success_message)
+        return redirect('helpcard:index')
+
+    # GET запрос - показываем страницу подтверждения
+    context = {
+        'problem': problem,
+    }
+    return render(request, 'helpcard/complete_problem.html', context)

@@ -92,6 +92,12 @@ class Problem(models.Model):
         help_text='Например: Мокшан, Пенза, Рамзай'
     )
 
+    # Поле для комментария исполнителя
+    executor_comment = models.TextField(
+        blank=True,
+        verbose_name='Комментарий исполнителя'
+    )
+
     class Meta:
         ordering = ['-created_at']
         verbose_name = 'Проблема'

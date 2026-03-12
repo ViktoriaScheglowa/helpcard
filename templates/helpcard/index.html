@@ -243,37 +243,37 @@
 
        {% if user.is_authenticated %}
            if (problem.can_take) {
-               content += `
-                   <a href="/helpcard/take_problem/${problem.id}/"
-                      style="display: inline-block;
-                      padding: 5px 10px;
-                      background: #28a745;
-                      color: white;
-                      text-decoration: none;
-                      border-radius: 30px;
-                      margin-top: 5px;">
-                      Взять в работу
-                   </a>
-               `;
-           } else if (problem.can_complete) {
-               content += `
-                   <a href="/helpcard/complete_problem/${problem.id}/"
-                      style="display: inline-block;
-                      padding: 5px 10px;
-                      background: #007bff;
-                      color: white;
-                      text-decoration: none;
-                      border-radius: 30px;
-                      margin-top: 5px;">
-                      Отметить решенной
-                   </a>
-               `;
-           }
-       {% endif %}
+    content += `
+        <a href="/take_problem/${problem.id}/"
+                   style="display: inline-block;
+                   padding: 5px 10px;
+                   background: #28a745;
+                   color: white;
+                   text-decoration: none;
+                   border-radius: 30px;
+                   margin-top: 5px;">
+                   Взять в работу
+                </a>
+            `;
+        } else if (problem.can_complete) {
+            content += `
+                <a href="/complete_problem/${problem.id}/"
+                   style="display: inline-block;
+                   padding: 5px 10px;
+                   background: #007bff;
+                   color: white;
+                   text-decoration: none;
+                   border-radius: 30px;
+                   margin-top: 5px;">
+                   Отметить решенной
+                </a>
+            `;
+        }
+    {% endif %}
 
-       content += `</div>`;
-       return content;
-   }
+    content += `</div>`;
+    return content;
+}
 
    // Функция для показа модального окна
    function showModal(lat, lng) {

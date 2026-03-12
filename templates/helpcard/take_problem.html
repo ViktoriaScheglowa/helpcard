@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Взять задачу в работу{% endblock %}
+
+{% block extra_css %}
+<style>
+    .take-problem-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .take-problem-card {
+        background: white;
+        border-radius: 30px;
+        box-shadow: 0 10px 40px rgba(46, 125, 50, 0.15);
+        overflow: hidden;
+        border: 2px solid #c8e6c9;
+        animation: slideUp 0.5s ease-out;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .take-problem-header {
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        padding: 30px;
+        text-align: center;
+        border-bottom: 2px solid #a5d6a7;
+    }
+
+    .take-problem-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+
+    .take-problem-header h1 {
+        color: #2e7d32;
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .take-problem-header p {
+        color: #388e3c;
+        font-size: 1rem;
+        opacity: 0.9;
+    }
+
+    .take-problem-body {
+        padding: 30px;
+    }
+
+    .problem-info {
+        background-color: #f8f9fa;
+        border: 2px solid #e8f5e9;
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+
+    .info-item {
+        display: flex;
+        margin-bottom: 15px;
+        align-items: flex-start;
+    }
+
+    .info-label {
+        min-width: 120px;
+        color: #2e7d32;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .info-value {
+        color: #1b5e20;
+        flex: 1;
+    }
+
+    .info-value.category {
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        padding: 5px 15px;
+        border-radius: 30px;
+        display: inline-block;
+    }
+
+    .info-value.status {
+        background-color: #fff3cd;
+        color: #856404;
+        padding: 5px 15px;
+        border-radius: 30px;
+        display: inline-block;
+    }
+
+    .take-problem-form {
+        margin-top: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-group label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 10px;
+        color: #2e7d32;
+        font-weight: 500;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 15px 20px;
+        border: 2px solid #e8f5e9;
+        border-radius: 30px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background-color: #f8f9fa;
+        box-sizing: border-box;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #66bb6a;
+        background-color: white;
+        box-shadow: 0 0 0 4px rgba(102, 187, 106, 0.1);
+    }
+
+    .date-input-group {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .date-input {
+        flex: 2;
+    }
+
+    .days-input {
+        flex: 1;
+    }
+
+    .help-text {
+        color: #6c757d;
+        font-size: 0.85rem;
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .help-text::before {
+        content: 'ℹ️';
+        font-size: 0.9rem;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+    }
+
+    .btn {
+        padding: 12px 25px;
+        border-radius: 30px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        flex: 1;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+
+    .btn-secondary {
+        background-color: #f8f9fa;
+        color: #6c757d;
+        border: 2px solid #6c757d;
+    }
+
+    .btn-secondary:hover {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .warning-message {
+        background-color: #fff3cd;
+        border: 2px solid #ffeeba;
+        border-radius: 30px;
+        padding: 15px 20px;
+        margin-bottom: 25px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #856404;
+    }
+
+    .warning-icon {
+        font-size: 1.2rem;
+    }
+
+    /* Стили для календаря */
+    input[type="date"] {
+        appearance: none;
+        -webkit-appearance: none;
+        color: #2e7d32;
+        font-family: inherit;
+    }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        background: transparent;
+        color: #66bb6a;
+        cursor: pointer;
+        padding: 5px;
+    }
+
+    @media (max-width: 480px) {
+        .take-problem-header {
+            padding: 20px;
+        }
+
+        .take-problem-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .take-problem-body {
+            padding: 20px;
+        }
+
+        .info-item {
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .info-label {
+            min-width: auto;
+        }
+
+        .form-actions {
+            flex-direction: column;
+        }
+
+        .date-input-group {
+            flex-direction: column;
+            gap: 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="take-problem-container">
+    <div class="take-problem-card">
+        <div class="take-problem-header">
+            <div class="take-problem-icon">🔧</div>
+            <h1>Взять задачу в работу</h1>
+            <p>Укажите срок выполнения и подтвердите</p>
+        </div>
+
+        <div class="take-problem-body">
+            <!-- Информация о проблеме -->
+            <div class="problem-info">
+                <div class="info-item">
+                    <span class="info-label"><span>🏷️</span> Категория:</span>
+                    <span class="info-value category">{{ problem.get_category_display }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label"><span>📝</span> Описание:</span>
+                    <span class="info-value">{{ problem.description|truncatechars:100 }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label"><span>📍</span> Адрес:</span>
+                    <span class="info-value">{{ problem.address|default:"Не указан" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label"><span>📅</span> Создана:</span>
+                    <span class="info-value">{{ problem.created_at|date:"d.m.Y" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label"><span>👤</span> Автор:</span>
+                    <span class="info-value">{{ problem.created_by.username|default:"Неизвестно" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label"><span>⚡</span> Статус:</span>
+                    <span class="info-value status">{{ problem.get_status_display }}</span>
+                </div>
+            </div>
+
+            <!-- Форма для взятия задачи -->
+            <form method="post" class="take-problem-form">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="deadline">
+                        <span>📅</span>
+                        Срок выполнения
+                    </label>
+                    <div class="date-input-group">
+                        <input type="date"
+                               name="deadline"
+                               id="deadline"
+                               class="form-control date-input"
+                               min="{{ today }}"
+                               value="{{ default_date }}"
+                               required>
+                        <input type="number"
+                               name="days"
+                               id="days"
+                               class="form-control days-input"
+                               placeholder="дней"
+                               min="1"
+                               max="30"
+                               value="3">
+                    </div>
+                    <div class="help-text">
+                        Укажите дату или количество дней для выполнения задачи
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="comment">
+                        <span>💬</span>
+                        Комментарий (необязательно)
+                    </label>
+                    <textarea name="comment"
+                              id="comment"
+                              class="form-control"
+                              rows="3"
+                              placeholder="Оставьте комментарий, например, как будете решать проблему..."></textarea>
+                </div>
+
+                <div class="warning-message">
+                    <span class="warning-icon">⚠️</span>
+                    <span>После подтверждения вы станете ответственным за решение задачи до указанного срока.</span>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <span>✓</span>
+                        Подтвердить
+                    </button>
+                    <a href="{% url 'helpcard:index' %}" class="btn btn-secondary">
+                        <span>✗</span>
+                        Отмена
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const deadlineInput = document.getElementById('deadline');
+    const daysInput = document.getElementById('days');
+
+    // Функция для обновления даты на основе дней
+    function updateDateFromDays() {
+        const days = parseInt(daysInput.value) || 3;
+        const today = new Date();
+        const futureDate = new Date(today);
+        futureDate.setDate(today.getDate() + days);
+
+        const year = futureDate.getFullYear();
+        const month = String(futureDate.getMonth() + 1).padStart(2, '0');
+        const day = String(futureDate.getDate()).padStart(2, '0');
+
+        deadlineInput.value = `${year}-${month}-${day}`;
+    }
+
+    // Функция для обновления дней на основе даты
+    function updateDaysFromDate() {
+        if (deadlineInput.value) {
+            const selectedDate = new Date(deadlineInput.value);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const diffTime = selectedDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays > 0) {
+                daysInput.value = diffDays;
+            }
+        }
+    }
+
+    // Слушатели событий
+    daysInput.addEventListener('input', updateDateFromDays);
+    deadlineInput.addEventListener('change', updateDaysFromDate);
+
+    // Установка минимальной даты
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    deadlineInput.min = `${year}-${month}-${day}`;
+
+    // Установка начальной даты
+    updateDateFromDays();
+});
+</script>
+{% endblock %}

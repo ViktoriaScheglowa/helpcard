@@ -1,84 +1,456 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Проблема #{{ problem.id }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .problem-detail-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .problem-detail-card {
+        background: white;
+        border-radius: 30px;
+        box-shadow: 0 10px 40px rgba(46, 125, 50, 0.15);
+        overflow: hidden;
+        border: 2px solid #c8e6c9;
+        animation: slideUp 0.5s ease-out;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .problem-detail-header {
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        padding: 30px;
+        position: relative;
+        border-bottom: 2px solid #a5d6a7;
+    }
+
+    .problem-id {
+        display: inline-block;
+        background: white;
+        color: #2e7d32;
+        padding: 8px 20px;
+        border-radius: 30px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .problem-title {
+        color: #2e7d32;
+        font-size: 2rem;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .problem-meta {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .meta-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 20px;
+        background: white;
+        border-radius: 30px;
+        color: #2e7d32;
+        font-size: 0.95rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .problem-detail-body {
+        padding: 40px;
+    }
+
+    .info-section {
+        margin-bottom: 30px;
+    }
+
+    .section-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #2e7d32;
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e8f5e9;
+    }
+
+    .section-title span {
+        font-size: 1.5rem;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        background-color: #f8f9fa;
+        border: 2px solid #e8f5e9;
+        border-radius: 20px;
+        padding: 25px;
+    }
+
+    .info-item {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .info-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: #558b2f;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .info-value {
+        color: #2e7d32;
+        font-size: 1.1rem;
+        font-weight: 500;
+    }
+
+    .info-value.category {
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        padding: 5px 15px;
+        border-radius: 30px;
+        display: inline-block;
+    }
+
+    .info-value.status {
+        background-color: #fff3cd;
+        color: #856404;
+        padding: 5px 15px;
+        border-radius: 30px;
+        display: inline-block;
+    }
+
+    .description-box {
+        background-color: #f8f9fa;
+        border: 2px solid #e8f5e9;
+        border-radius: 20px;
+        padding: 25px;
+        line-height: 1.6;
+        color: #2e7d32;
+        font-size: 1.1rem;
+    }
+
+    .coordinates-box {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e8f5e9 100%);
+        border: 2px solid #c8e6c9;
+        border-radius: 20px;
+        padding: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+    }
+
+    .coordinate-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: white;
+        padding: 10px 20px;
+        border-radius: 30px;
+        color: #2e7d32;
+    }
+
+    .coordinate-label {
+        font-weight: 500;
+        color: #558b2f;
+    }
+
+    .coordinate-value {
+        font-family: monospace;
+        font-size: 1.1rem;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 30px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 12px 30px;
+        border-radius: 30px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: none;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(56, 142, 60, 0.3);
+    }
+
+    .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(56, 142, 60, 0.4);
+    }
+
+    .btn-warning {
+        background: linear-gradient(135deg, #ffb74d 0%, #ff9800 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+    }
+
+    .btn-warning:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(255, 152, 0, 0.4);
+    }
+
+    .btn-secondary {
+        background: linear-gradient(135deg, #9e9e9e 0%, #757575 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(117, 117, 117, 0.3);
+    }
+
+    .btn-secondary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(117, 117, 117, 0.4);
+    }
+
+    .btn:active {
+        transform: translateY(0);
+    }
+
+    /* Уведомление об успехе (если есть) */
+    .success-notification {
+        background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+        border: 2px solid #a5d6a7;
+        border-radius: 20px;
+        padding: 20px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    .success-icon {
+        font-size: 2rem;
+    }
+
+    .success-content {
+        flex: 1;
+    }
+
+    .success-title {
+        color: #2e7d32;
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+
+    .success-details {
+        display: flex;
+        gap: 15px;
+        color: #388e3c;
+        font-size: 0.9rem;
+        flex-wrap: wrap;
+    }
+
+    .success-details span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        background: rgba(255, 255, 255, 0.5);
+        padding: 4px 10px;
+        border-radius: 30px;
+    }
+
+    @media (max-width: 768px) {
+        .problem-detail-header {
+            padding: 20px;
+        }
+
+        .problem-title {
+            font-size: 1.5rem;
+        }
+
+        .problem-detail-body {
+            padding: 20px;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+            padding: 15px;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .btn {
+            min-width: auto;
+        }
+
+        .coordinates-box {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div style="max-width: 800px; margin: 0 auto;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h1>Проблема #{{ problem.id }}</h1>
-        <a href="{% url 'helpcard:index' %}" class="btn" style="background-color: #6c757d;">← На карту</a>
-    </div>
-
-    <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        
-        <!-- Статус и категория -->
-        <div style="display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
-            <span class="btn" style="background-color: 
-                {% if problem.status == 'new' %}#28a745
-                {% elif problem.status == 'in_progress' %}#17a2b8
-                {% elif problem.status == 'solved' %}#6c757d
-                {% else %}#dc3545{% endif %};
-                cursor: default; opacity: 1;">
-                Статус: {{ problem.get_status_display }}
-            </span>
-            <span class="btn" style="background-color: #6f42c1; cursor: default; opacity: 1;">
-                Категория: {{ problem.get_category_display }}
-            </span>
+<div class="problem-detail-container">
+    <!-- Уведомление об успехе (если есть) -->
+    <div class="problem-detail-card">
+        <div class="problem-detail-header">
+            <div class="problem-id">#{{ problem.id }}</div>
+            <h1 class="problem-title">Проблема #{{ problem.id }}</h1>
+            <div class="problem-meta">
+                <span class="meta-badge">
+                    <span>📅</span> {{ problem.created_at|date:"d.m.Y" }}
+                </span>
+                <span class="meta-badge">
+                    <span>👤</span> {{ problem.created_by.username|default:"Неизвестно" }}
+                </span>
+            </div>
         </div>
 
-        <!-- Информация о местоположении -->
-        <div style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-            <h3 style="margin-bottom: 10px;">📍 Местоположение</h3>
-            <p><strong>Координаты:</strong> {{ problem.latitude }}, {{ problem.longitude }}</p>
-            {% if problem.address %}
-                <p><strong>Адрес:</strong> {{ problem.address }}</p>
-            {% endif %}
-        </div>
+        <div class="problem-detail-body">
+            <!-- Статус и категория -->
+            <div class="info-section">
+                <h2 class="section-title">
+                    <span>📊</span> Информация
+                </h2>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">⚡ Статус</span>
+                        <span class="info-value status">{{ problem.get_status_display }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">🏷️ Категория</span>
+                        <span class="info-value category">{{ problem.get_category_display }}</span>
+                    </div>
+                    {% if problem.assigned_to %}
+                    <div class="info-item">
+                        <span class="info-label">🔧 Исполнитель</span>
+                        <span class="info-value">{{ problem.assigned_to.username }}</span>
+                    </div>
+                    {% endif %}
+                    {% if problem.promised_deadline %}
+                    <div class="info-item">
+                        <span class="info-label">📅 Срок</span>
+                        <span class="info-value">{{ problem.promised_deadline|date:"d.m.Y" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
 
-        <!-- Описание проблемы -->
-        <div style="margin-bottom: 25px;">
-            <h3 style="margin-bottom: 10px;">📝 Описание</h3>
-            <p style="font-size: 1.1rem; line-height: 1.6;">{{ problem.description }}</p>
-        </div>
+            <!-- Местоположение -->
+            <div class="info-section">
+                <h2 class="section-title">
+                    <span>📍</span> Местоположение
+                </h2>
+                <div class="coordinates-box">
+                    <div class="coordinate-item">
+                        <span class="coordinate-label">Широта:</span>
+                        <span class="coordinate-value">{{ problem.latitude }}</span>
+                    </div>
+                    <div class="coordinate-item">
+                        <span class="coordinate-label">Долгота:</span>
+                        <span class="coordinate-value">{{ problem.longitude }}</span>
+                    </div>
+                    {% if problem.address %}
+                    <div class="coordinate-item">
+                        <span class="coordinate-label">📍 Адрес:</span>
+                        <span class="coordinate-value">{{ problem.address }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
 
-        <!-- Информация о создателе и датах -->
-        <div style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-            <h3 style="margin-bottom: 10px;">ℹ️ Детали</h3>
-            <p><strong>Создал:</strong> {{ problem.created_by.username|default:"Неизвестно" }}</p>
-            <p><strong>Создана:</strong> {{ problem.created_at|date:"d.m.Y H:i" }}</p>
-            {% if problem.assigned_to %}
-                <p><strong>Исполнитель:</strong> {{ problem.assigned_to.username }}</p>
-            {% endif %}
-            {% if problem.assigned_at %}
-                <p><strong>Назначена:</strong> {{ problem.assigned_at|date:"d.m.Y H:i" }}</p>
-            {% endif %}
-            {% if problem.promised_deadline %}
-                <p><strong>Срок:</strong> {{ problem.promised_deadline|date:"d.m.Y" }}</p>
-            {% endif %}
-        </div>
+            <!-- Описание -->
+            <div class="info-section">
+                <h2 class="section-title">
+                    <span>📝</span> Описание
+                </h2>
+                <div class="description-box">
+                    {{ problem.description|linebreaks }}
+                </div>
+            </div>
 
-        <!-- Кнопки действий для авторизованных пользователей -->
-        {% if user.is_authenticated %}
-            <div style="display: flex; gap: 15px; margin-top: 30px;">
-                {% if user.role == 'executor' and problem.status == 'new' %}
-                    <a href="{% url 'helpcard:take_problem' problem.id %}" class="btn btn-success" style="flex: 1;">
-                        Взять в работу
-                    </a>
-                {% endif %}
-                
-                {% if user.role == 'admin' or problem.assigned_to == user %}
-                    {% if problem.status != 'solved' %}
-                        <a href="{% url 'helpcard:complete_problem' problem.id %}" class="btn" style="flex: 1; background-color: #007bff;">
-                            Отметить решенной
+            {% if problem.executor_comment %}
+            <!-- Комментарий исполнителя -->
+            <div class="info-section">
+                <h2 class="section-title">
+                    <span>💬</span> Комментарий исполнителя
+                </h2>
+                <div class="description-box" style="background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);">
+                    {{ problem.executor_comment|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Кнопки действий -->
+            <div class="action-buttons">
+                {% if user.is_authenticated %}
+                    {% if user.role == 'executor' and problem.status == 'new' %}
+                        <a href="{% url 'helpcard:take_problem' problem.id %}" class="btn btn-success">
+                            <span>🔧</span> Взять в работу
                         </a>
                     {% endif %}
+
+                    {% if user.role == 'admin' or problem.assigned_to == user %}
+                        {% if problem.status != 'solved' %}
+                            <a href="{% url 'helpcard:complete_problem' problem.id %}" class="btn btn-warning">
+                                <span>✅</span> Отметить решенной
+                            </a>
+                        {% endif %}
+                    {% endif %}
                 {% endif %}
-                
-                <a href="{% url 'helpcard:index' %}" class="btn" style="flex: 1; background-color: #6c757d;">
-                    Назад
+
+                <a href="{% url 'helpcard:index' %}" class="btn btn-secondary">
+                    <span>←</span> Назад к карте
                 </a>
             </div>
-        {% endif %}
+        </div>
     </div>
 </div>
 {% endblock %}
