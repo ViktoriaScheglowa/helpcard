@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Карта помощи{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/map.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1>🗺️ Народная карта помощи</h1>
+
+<!-- Фильтры -->
+<div class="filters">
+    <form method="get" action="{% url 'helpcard:index' %}" id="filterForm">
+
+        <!-- Выпадающее меню категорий -->
+        <div class="categories-dropdown">
+            <div class="categories-trigger">
+                <span>🏷️ Категории</span>
+                <span class="arrow">▼</span>
+            </div>
+            <div class="categories-menu">
+                {% for category in categories %}
+                <div class="category-item">
+                    <input type="checkbox"
+                           name="category"
+                           value="{{ category.name }}"
+                           id="cat_{{ category.id }}"
+                           {% if category.name in selected_categories %}checked{% endif %}>
+                    <label for="cat_{{ category.id }}">{{ category.display_name }}</label>
+                    <span class="category-count">{{ category.problem_count|default:0 }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">Применить фильтр</button>
+            <a href="{% url 'helpcard:index' %}" class="btn btn-secondary">Сбросить</a>
+        </div>
+    </form>
+</div>
+
+<!-- Контейнер для карты -->
+<div class="map-container">
+    <div id="map"></div>
+</div>
+
+<!-- Легенда -->
+<div class="legend">
+    <div class="legend-item"><span class="color-dot dot-green"></span> Новая (до 3 дней)</div>
+    <div class="legend-item"><span class="color-dot dot-orange"></span> Новая (3-7 дней)</div>
+    <div class="legend-item"><span class="color-dot dot-red"></span> Просрочена (>7 дней)</div>
+    <div class="legend-item"><span class="color-dot dot-blue"></span> В работе</div>
+    <div class="legend-item"><span class="color-dot dot-darkred"></span> Просрочена исполнителем</div>
+    <div class="legend-item"><span class="color-dot dot-gray"></span> Решена</div>
+</div>
+
+<!-- Инструкция для авторизованных -->
+{% if user.is_authenticated %}
+<div class="instruction-box">
+    <p>👇 Кликните на карте в месте проблемы, чтобы добавить новую заявку</p>
+</div>
+{% else %}
+<div class="login-prompt">
+    <p>🔒 <a href="{% url 'login' %}">Войдите</a> или <a href="{% url 'users:register' %}">зарегистрируйтесь</a>, чтобы добавлять проблемы</p>
+</div>
+{% endif %}
+
+<!-- Модальное окно для добавления проблемы -->
+<div id="problemModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2><span>➕</span> Добавить новую проблему</h2>
+            <span class="modal-close" onclick="hideModal()">&times;</span>
+        </div>
+
+        <div class="modal-body">
+            <!-- Выбранное место на карте -->
+            <div id="selectedLocation" class="selected-location">
+                <span id="selectedCoords"></span>
+            </div>
+
+            <form method="post" action="{% url 'helpcard:add_problem' %}" id="addProblemForm" class="modal-form">
+                {% csrf_token %}
+
+                <!-- Скрытые поля для координат -->
+                <input type="hidden" id="lat" name="latitude">
+                <input type="hidden" id="lng" name="longitude">
+
+                <!-- Поле для ручного ввода адреса -->
+                <div class="form-group">
+                    <label for="address">
+                        <span>📍</span>
+                        Адрес (если не кликнули на карте):
+                    </label>
+                    <input type="text" id="address" name="address" class="form-control"
+                           placeholder="Например: ул. Ленина, д. 15, Мокшан">
+                    <small class="text-muted">Введите адрес, если не выбрали место на карте</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="category">
+                        <span>🏷️</span>
+                        Категория проблемы:
+                    </label>
+                    <select id="category" name="category_id" class="form-control" required>
+                        <option value="">-- Выберите категорию --</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.display_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">
+                        <span>📝</span>
+                        Описание проблемы:
+                    </label>
+                    <textarea id="description" name="description" class="form-control" rows="4"
+                              placeholder="Опишите проблему подробнее..." required></textarea>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="hideModal()">Отмена</button>
+                    <button type="submit" class="btn btn-success">Отправить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Подключение Яндекс Карт -->
+<script src="https://api-maps.yandex.ru/2.1/?apikey={{ api_key }}&lang=ru_RU" type="text/javascript"></script>
+
+<script>
+   // Переменные для модального окна
+   var modal = document.getElementById('problemModal');
+   var latInput = document.getElementById('lat');
+   var lngInput = document.getElementById('lng');
+   var addressInput = document.getElementById('address');
+   var selectedLocationDiv = document.getElementById('selectedLocation');
+   var selectedCoords = document.getElementById('selectedCoords');
+   var myMap;
+
+   // Данные проблем из Django
+   var problems = JSON.parse('{{ problems_json|escapejs }}');
+
+   // Ждем загрузки API Яндекс Карт
+   ymaps.ready(init);
+
+   function init() {
+       console.log('Яндекс Карты загружены');
+
+       try {
+           // Центр карты - Мокшан
+           var center = [53.4365, 44.6106];
+
+           // Создаем карту
+           myMap = new ymaps.Map('map', {
+               center: center,
+               zoom: 14,
+               controls: ['zoomControl', 'fullscreenControl']
+           });
+
+           console.log('Карта создана');
+
+           // Добавляем обработчик клика по карте
+           myMap.events.add('click', function(e) {
+               {% if user.is_authenticated %}
+                   var coords = e.get('coords');
+                   var lat = coords[0].toFixed(6);
+                   var lng = coords[1].toFixed(6);
+                   showModal(lat, lng);
+               {% else %}
+                   alert('Пожалуйста, авторизуйтесь, чтобы добавлять проблемы');
+                   window.location.href = "{% url 'login' %}";
+               {% endif %}
+           });
+
+           // Добавляем маркеры проблем
+           addMarkers();
+
+       } catch (error) {
+           console.error('Ошибка при создании карты:', error);
+           document.getElementById('map').innerHTML = '<div class="error-message">Ошибка загрузки карты. Проверьте API ключ.</div>';
+       }
+   }
+
+   // Функция добавления маркеров
+   function addMarkers() {
+       problems.forEach(function(problem) {
+           // Определяем цвет маркера
+           var colors = {
+               'green': 'green',
+               'orange': 'orange',
+               'red': 'red',
+               'blue': 'blue',
+               'darkred': 'darkred',
+               'gray': 'gray'
+           };
+
+           var color = colors[problem.color] || 'green';
+
+           // Создаем метку
+           var placemark = new ymaps.Placemark(
+               [problem.lat, problem.lng],
+               {
+                   hintContent: problem.category,
+                   balloonContent: createBalloonContent(problem)
+               },
+               {
+                   preset: 'islands#circleIcon',
+                   iconColor: color
+               }
+           );
+
+           // Добавляем метку на карту
+           myMap.geoObjects.add(placemark);
+       });
+
+       console.log('Маркеры добавлены');
+   }
+
+   // Функция создания содержимого балуна
+   function createBalloonContent(problem) {
+       var content = `
+           <div style="min-width: 250px; max-width: 300px;">
+               <h4 style="margin: 0 0 10px 0;">${problem.category}</h4>
+               <p><strong>Описание:</strong> ${problem.full_description}</p>
+               <p><strong>Статус:</strong> ${problem.status}</p>
+               <p><strong>Создана:</strong> ${problem.created_at}</p>
+       `;
+
+       if (problem.assigned_to) {
+           content += `<p><strong>Исполнитель:</strong> ${problem.assigned_to}</p>`;
+       }
+
+       if (problem.promised_deadline) {
+           content += `<p><strong>Срок:</strong> ${problem.promised_deadline}</p>`;
+       }
+
+       {% if user.is_authenticated %}
+           if (problem.can_take) {
+               content += `
+                   <a href="/helpcard/take_problem/${problem.id}/"
+                      style="display: inline-block;
+                      padding: 5px 10px;
+                      background: #28a745;
+                      color: white;
+                      text-decoration: none;
+                      border-radius: 30px;
+                      margin-top: 5px;">
+                      Взять в работу
+                   </a>
+               `;
+           } else if (problem.can_complete) {
+               content += `
+                   <a href="/helpcard/complete_problem/${problem.id}/"
+                      style="display: inline-block;
+                      padding: 5px 10px;
+                      background: #007bff;
+                      color: white;
+                      text-decoration: none;
+                      border-radius: 30px;
+                      margin-top: 5px;">
+                      Отметить решенной
+                   </a>
+               `;
+           }
+       {% endif %}
+
+       content += `</div>`;
+       return content;
+   }
+
+   // Функция для показа модального окна
+   function showModal(lat, lng) {
+       console.log('Показываем модальное окно с координатами:', lat, lng);
+
+       // Заполняем скрытые поля
+       latInput.value = lat;
+       lngInput.value = lng;
+
+       // Показываем выбранные координаты
+       if (lat && lng) {
+           selectedCoords.textContent = `Координаты: ${lat}, ${lng}`;
+           selectedLocationDiv.style.display = 'flex';
+       } else {
+           selectedLocationDiv.style.display = 'none';
+       }
+
+       // Очищаем поле адреса
+       addressInput.value = '';
+
+       // Показываем модальное окно
+       modal.style.display = 'flex';
+       document.body.style.overflow = 'hidden';
+   }
+
+   // Функция для скрытия модального окна
+   function hideModal() {
+       modal.style.display = 'none';
+       document.body.style.overflow = 'auto';
+
+       // Очищаем поля
+       latInput.value = '';
+       lngInput.value = '';
+       addressInput.value = '';
+       selectedLocationDiv.style.display = 'none';
+   }
+
+   // Закрытие по клику вне модального окна
+   window.onclick = function(event) {
+       if (event.target == modal) {
+           hideModal();
+       }
+   };
+
+   // Закрытие по клавише Escape
+   document.addEventListener('keydown', function(event) {
+       if (event.key === 'Escape' && modal.style.display === 'flex') {
+           hideModal();
+       }
+   });
+
+   // Обработка отправки формы
+   document.getElementById('addProblemForm').addEventListener('submit', function(e) {
+       if ((!latInput.value || latInput.value === '') && !addressInput.value.trim()) {
+           e.preventDefault();
+           alert('Пожалуйста, укажите местоположение: кликните на карте или введите адрес');
+       }
+   });
+
+   // Открытие/закрытие меню категорий по клику
+   document.addEventListener('DOMContentLoaded', function() {
+       const trigger = document.querySelector('.categories-trigger');
+       const menu = document.querySelector('.categories-menu');
+
+       if (trigger && menu) {
+           // Открытие по клику на триггер
+           trigger.addEventListener('click', function(e) {
+               e.stopPropagation();
+               e.preventDefault();
+
+               // Переключаем класс active у триггера
+               this.classList.toggle('active');
+
+               // Переключаем класс show у меню
+               menu.classList.toggle('show');
+           });
+
+           // Предотвращаем закрытие при клике внутри меню
+           menu.addEventListener('click', function(e) {
+               e.stopPropagation();
+           });
+
+           // Закрытие при клике вне меню
+           document.addEventListener('click', function(e) {
+               if (!trigger.contains(e.target) && !menu.contains(e.target)) {
+                   trigger.classList.remove('active');
+                   menu.classList.remove('show');
+               }
+           });
+
+           // Закрытие по клавише Escape
+           document.addEventListener('keydown', function(e) {
+               if (e.key === 'Escape') {
+                   trigger.classList.remove('active');
+                   menu.classList.remove('show');
+               }
+           });
+       }
+
+       // Обработка выбора категорий
+       const categoryItems = document.querySelectorAll('.category-item');
+       categoryItems.forEach(item => {
+           const checkbox = item.querySelector('input[type="checkbox"]');
+           if (checkbox) {
+               // При клике на элемент категории переключаем чекбокс
+               item.addEventListener('click', function(e) {
+                   // Не переключаем, если клик был точно по чекбоксу (чтобы избежать двойного срабатывания)
+                   if (e.target.type !== 'checkbox') {
+                       checkbox.checked = !checkbox.checked;
+                   }
+               });
+           }
+       });
+   });
+</script>
+{% endblock %}

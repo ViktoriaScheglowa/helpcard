@@ -1,0 +1,646 @@
+{% load static %}
+<div class="menu-container">
+    <!-- Верхняя панель с логотипом -->
+    <div class="top-bar">
+        <div class="logo-area">
+            <a href="{% url 'helpcard:index' %}" class="logo">
+                <span class="logo-icon">🗺️</span>  <!-- Заменил на значок карты -->
+                <span class="logo-text">HelpCard</span>
+            </a>
+        </div>
+        <div class="burger-menu" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+
+    <!-- Выпадающее меню (появляется при наведении) -->
+    <div class="dropdown-menu" id="mainMenu">
+        <div class="menu-content">
+            <!-- Левая часть меню -->
+            <div class="menu-left">
+                <!-- Выбор населенного пункта -->
+                <div class="city-selector">
+                    <div class="city-display" onclick="toggleCityDropdown(event)">
+                        <span id="selectedCityDisplay">
+                            {% if request.GET.location == 'penza' %}
+                                🏙️ Пенза
+                            {% elif request.GET.location == 'ramzai' %}
+                                🏘️ Рамзай
+                            {% else %}
+                                📍 Мокшан
+                            {% endif %}
+                        </span>
+                        <span class="city-arrow">▼</span>
+                    </div>
+
+                    <div class="city-dropdown" id="cityDropdown">
+                        <div class="city-option" data-value="mokshan" onclick="selectCity('mokshan', '📍 Мокшан')">
+                            📍 Мокшан
+                        </div>
+                        <div class="city-option" data-value="penza" onclick="selectCity('penza', '🏙️ Пенза')">
+                            🏙️ Пенза
+                        </div>
+                        <div class="city-option" data-value="ramzai" onclick="selectCity('ramzai', '🏘️ Рамзай')">
+                            🏘️ Рамзай
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Навигационные меню в один ряд -->
+                <div class="nav-menu">
+                    <div class="menu-item">
+                        <span class="menu-title">Публичное</span>
+                        <div class="submenu">
+                            <a href="#" class="submenu-item">
+                                <span>📢</span> Объявления
+                            </a>
+                            <a href="#" class="submenu-item">
+                                <span>📅</span> События
+                            </a>
+                            <a href="#" class="submenu-item">
+                                <span>🏛️</span> Организации
+                            </a>
+                            <a href="#" class="submenu-item">
+                                <span>📰</span> Новости
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="menu-item">
+                        <span class="menu-title">Личное</span>
+                        <div class="submenu">
+                            <a href="#" class="submenu-item">
+                                <span>👤</span> Мой профиль
+                            </a>
+                            <a href="#" class="submenu-item">
+                                <span>⭐</span> Избранное
+                            </a>
+                            <a href="#" class="submenu-item">
+                                <span>📋</span> Мои задачи
+                            </a>
+                            <a href="#" class="submenu-item">
+                                <span>⚙️</span> Настройки
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Правая часть меню (авторизация) -->
+            <div class="menu-right">
+                {% if user.is_authenticated %}
+                    <div class="user-info">
+                        <span class="user-avatar">👤</span>
+                        <span class="user-name">{{ user.username }}</span>
+                        {% if user.is_superuser or user.role == 'admin' %}
+                            <a href="/admin/" target="_blank" class="admin-link">⚙️</a>
+                        {% endif %}
+                    </div>
+                    <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="menu-link logout" style="border: none; background: none; cursor: pointer; font-size: 1rem;">
+                            🚪 Выйти
+                        </button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login' %}" class="menu-link login">🔑 Войти</a>
+                    <a href="{% url 'users:register' %}" class="menu-link register">📝 Регистрация</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Скрытая форма для отправки города -->
+<form method="get" action="{% url 'helpcard:index' %}" id="cityForm" style="display: none;">
+    <input type="hidden" name="location" id="cityInput" value="{{ request.GET.location|default:'mokshan' }}">
+    {% for category in selected_categories %}
+        <input type="hidden" name="category" value="{{ category }}">
+    {% endfor %}
+</form>
+
+<style>
+    .menu-container {
+        position: relative;
+        width: 100%;
+        z-index: 1000;
+    }
+
+    /* Верхняя панель с логотипом - нежно-зеленый */
+    .top-bar {
+        background-color: #e8f5e9;
+        padding: 1rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        border-bottom: 2px solid #c8e6c9;
+    }
+
+    .logo-area {
+        flex: 1;
+    }
+
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: #2e7d32;
+    }
+
+    .logo-icon {
+        font-size: 2rem;
+    }
+
+    .logo-text {
+        font-size: 1.5rem;
+        font-weight: bold;
+        letter-spacing: 1px;
+    }
+
+    /* Бургер-меню */
+    .burger-menu {
+        width: 30px;
+        height: 20px;
+        position: relative;
+        cursor: pointer;
+        z-index: 1001;
+    }
+
+    .burger-menu span {
+        display: block;
+        position: absolute;
+        height: 3px;
+        width: 100%;
+        background: #2e7d32;
+        border-radius: 3px;
+        opacity: 1;
+        left: 0;
+        transform: rotate(0deg);
+        transition: .25s ease-in-out;
+    }
+
+    .burger-menu span:nth-child(1) {
+        top: 0px;
+    }
+
+    .burger-menu span:nth-child(2) {
+        top: 8px;
+    }
+
+    .burger-menu span:nth-child(3) {
+        top: 16px;
+    }
+
+    .burger-menu.open span:nth-child(1) {
+        top: 8px;
+        transform: rotate(135deg);
+    }
+
+    .burger-menu.open span:nth-child(2) {
+        opacity: 0;
+        left: -60px;
+    }
+
+    .burger-menu.open span:nth-child(3) {
+        top: 8px;
+        transform: rotate(-135deg);
+    }
+
+    /* Выпадающее меню */
+    .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transform: translateY(-100%);
+        transition: transform 0.3s ease;
+        visibility: hidden;
+        z-index: 999;
+        border-bottom: 2px solid #c8e6c9;
+    }
+
+    .menu-container:hover .dropdown-menu {
+        transform: translateY(0);
+        visibility: visible;
+    }
+
+    .menu-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .menu-left {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        flex-wrap: wrap;
+    }
+
+    /* Селектор города со скруглением */
+    .city-selector {
+        position: relative;
+    }
+
+    .city-display {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 15px;
+        background-color: #e8f5e9;
+        border-radius: 30px;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        border: 1px solid #c8e6c9;
+        color: #2e7d32;
+    }
+
+    .city-display:hover {
+        background-color: #c8e6c9;
+    }
+
+    .city-arrow {
+        font-size: 12px;
+        color: #66bb6a;
+        transition: transform 0.2s;
+    }
+
+    .city-display.active .city-arrow {
+        transform: rotate(180deg);
+    }
+
+    .city-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 5px;
+        background: white;
+        border: 1px solid #c8e6c9;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        min-width: 150px;
+        display: none;
+        z-index: 1002;
+        overflow: hidden;
+    }
+
+    .city-option {
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #e8f5e9;
+        transition: background-color 0.2s;
+        color: #2e7d32;
+    }
+
+    .city-option:last-child {
+        border-bottom: none;
+    }
+
+    .city-option:hover {
+        background-color: #e8f5e9;
+    }
+
+    .city-option.selected {
+        background-color: #c8e6c9;
+        font-weight: 500;
+    }
+
+    /* Навигационное меню в один ряд */
+    .nav-menu {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .menu-item {
+        position: relative;
+    }
+
+    .menu-title {
+        display: block;
+        padding: 8px 12px;
+        font-weight: 500;
+        color: #2e7d32;
+        cursor: default;
+        background-color: #e8f5e9;
+        border-radius: 30px;
+        border: 1px solid #c8e6c9;
+        white-space: nowrap;
+    }
+
+    .submenu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        border: 1px solid #c8e6c9;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        min-width: 180px;
+        display: none;
+        z-index: 1002;
+        overflow: hidden;
+    }
+
+    .menu-item:hover .submenu {
+        display: block;
+    }
+
+    .submenu-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 15px;
+        text-decoration: none;
+        color: #2e7d32;
+        border-bottom: 1px solid #e8f5e9;
+        transition: background-color 0.2s;
+    }
+
+    .submenu-item:last-child {
+        border-bottom: none;
+    }
+
+    .submenu-item:hover {
+        background-color: #e8f5e9;
+    }
+
+    /* Правая часть меню */
+    .menu-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 12px;
+        background-color: #e8f5e9;
+        border-radius: 30px;
+        border: 1px solid #c8e6c9;
+        color: #2e7d32;
+    }
+
+    .user-avatar {
+        font-size: 1.2rem;
+    }
+
+    .user-name {
+        font-weight: 500;
+    }
+
+    .admin-link {
+        text-decoration: none;
+        font-size: 1.1rem;
+        color: #2e7d32;
+    }
+
+    /* Кнопки со скруглением */
+    .menu-link {
+        padding: 8px 16px;
+        text-decoration: none;
+        border-radius: 30px;
+        font-weight: 500;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .menu-link.login {
+        background-color: #66bb6a;
+        color: white;
+        border: 1px solid #4caf50;
+    }
+
+    .menu-link.login:hover {
+        background-color: #4caf50;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+    }
+
+    .menu-link.register {
+        background-color: white;
+        color: #2e7d32;
+        border: 1px solid #66bb6a;
+    }
+
+    .menu-link.register:hover {
+        background-color: #e8f5e9;
+    }
+
+    .menu-link.logout {
+        color: #d32f2f;
+        border: 1px solid #ffcdd2;
+    }
+
+    .menu-link.logout:hover {
+        background-color: #ffebee;
+    }
+
+    /* Мобильная версия - все в один ряд */
+    @media (max-width: 768px) {
+        .menu-content {
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .menu-left {
+            width: 100%;
+            gap: 0.8rem;
+            justify-content: center;
+        }
+
+        /* Все элементы в один ряд */
+        .city-selector, .nav-menu {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .nav-menu {
+            gap: 0.5rem;
+        }
+
+        .menu-item {
+            display: inline-block;
+        }
+
+        .menu-title {
+            font-size: 0.9rem;
+            padding: 6px 10px;
+        }
+
+        .city-display {
+            font-size: 0.9rem;
+            padding: 6px 10px;
+        }
+
+        .submenu {
+            position: fixed;
+            top: auto;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 300px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .menu-right {
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .user-info {
+            font-size: 0.9rem;
+            padding: 4px 10px;
+        }
+
+        .menu-link {
+            font-size: 0.9rem;
+            padding: 6px 12px;
+        }
+    }
+
+    /* Для очень маленьких экранов */
+    @media (max-width: 480px) {
+        .menu-left {
+            flex-wrap: wrap;
+        }
+
+        .city-selector {
+            width: 100%;
+            text-align: center;
+        }
+
+        .city-display {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .nav-menu {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+
+<script>
+    function toggleMenu() {
+        const burger = document.querySelector('.burger-menu');
+        const menu = document.getElementById('mainMenu');
+        burger.classList.toggle('open');
+
+        if (burger.classList.contains('open')) {
+            menu.style.transform = 'translateY(0)';
+            menu.style.visibility = 'visible';
+        } else {
+            menu.style.transform = 'translateY(-100%)';
+            menu.style.visibility = 'hidden';
+        }
+    }
+
+    function toggleCityDropdown(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('cityDropdown');
+        const display = document.querySelector('.city-display');
+
+        if (dropdown.style.display === 'none' || dropdown.style.display === '') {
+            dropdown.style.display = 'block';
+            display.classList.add('active');
+        } else {
+            dropdown.style.display = 'none';
+            display.classList.remove('active');
+        }
+    }
+
+    function selectCity(value, displayText) {
+        document.getElementById('selectedCityDisplay').textContent = displayText;
+        document.getElementById('cityInput').value = value;
+        document.getElementById('cityDropdown').style.display = 'none';
+        document.querySelector('.city-display').classList.remove('active');
+        document.getElementById('cityForm').submit();
+    }
+
+    // Закрытие при клике вне
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('.city-selector')) {
+            document.getElementById('cityDropdown').style.display = 'none';
+            document.querySelector('.city-display')?.classList.remove('active');
+        }
+
+        // Закрываем подменю при клике вне на мобильных
+        if (window.innerWidth <= 768) {
+            if (!event.target.closest('.menu-item')) {
+                document.querySelectorAll('.submenu').forEach(menu => {
+                    menu.style.display = 'none';
+                });
+            }
+        }
+    });
+
+    // Закрытие по Escape
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            document.getElementById('cityDropdown').style.display = 'none';
+            document.querySelector('.city-display')?.classList.remove('active');
+
+            // Закрываем основное меню если открыто
+            const burger = document.querySelector('.burger-menu');
+            const menu = document.getElementById('mainMenu');
+            if (burger.classList.contains('open')) {
+                burger.classList.remove('open');
+                menu.style.transform = 'translateY(-100%)';
+                menu.style.visibility = 'hidden';
+            }
+
+            // Закрываем подменю
+            document.querySelectorAll('.submenu').forEach(menu => {
+                menu.style.display = 'none';
+            });
+        }
+    });
+
+    // Для мобильных - клик по меню открывает подменю
+    document.querySelectorAll('.menu-title').forEach(title => {
+        title.addEventListener('click', function(e) {
+            if (window.innerWidth <= 768) {
+                e.preventDefault();
+                const submenu = this.closest('.menu-item').querySelector('.submenu');
+                const isVisible = submenu.style.display === 'block';
+
+                // Закрываем все другие подменю
+                document.querySelectorAll('.submenu').forEach(menu => {
+                    menu.style.display = 'none';
+                });
+
+                // Открываем текущее если было закрыто
+                if (!isVisible) {
+                    submenu.style.display = 'block';
+                }
+            }
+        });
+    });
+
+    // Подсветка выбранного города
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentValue = document.getElementById('cityInput').value;
+        document.querySelectorAll('.city-option').forEach(option => {
+            if (option.dataset.value === currentValue) {
+                option.classList.add('selected');
+            }
+        });
+    });
+</script>

@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Вход в систему{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/login.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <div class="login-icon">🔐</div>
+            <h1>Добро пожаловать!</h1>
+            <p>Войдите в систему, чтобы продолжить</p>
+        </div>
+
+        <form method="post" class="login-form">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="id_username">
+                    <span class="label-icon">👤</span>
+                    Имя пользователя
+                </label>
+                <input type="text" name="username" id="id_username"
+                       class="form-control" placeholder="Введите имя пользователя"
+                       value="{{ form.username.value|default:'' }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="id_password">
+                    <span class="label-icon">🔒</span>
+                    Пароль
+                </label>
+                <input type="password" name="password" id="id_password"
+                       class="form-control" placeholder="Введите пароль" required>
+            </div>
+
+            {% if form.errors %}
+                <div class="error-message">
+                    <span class="error-icon">⚠️</span>
+                    Неправильное имя пользователя или пароль. Попробуйте снова.
+                </div>
+            {% endif %}
+
+            <button type="submit" class="login-button">
+                <span>Войти</span>
+                <span class="button-arrow">→</span>
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <p>Еще нет аккаунта?</p>
+            <a href="{% url 'users:register' %}" class="register-link">
+                <span>Зарегистрироваться</span>
+                <span class="link-arrow">→</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

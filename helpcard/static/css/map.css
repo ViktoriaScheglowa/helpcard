@@ -1,0 +1,305 @@
+/* Стили для страницы карты */
+.map-container {
+    height: 600px;
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+}
+
+.filters {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Стили для выпадающего меню категорий */
+.categories-dropdown {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+.categories-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 25px;
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border: 2px solid #a5d6a7;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #2e7d32;
+    transition: all 0.3s;
+}
+
+.categories-trigger:hover {
+    background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+}
+
+.categories-trigger .arrow {
+    font-size: 14px;
+    transition: transform 0.3s;
+}
+
+.categories-trigger.active .arrow {
+    transform: rotate(180deg);
+}
+
+.categories-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 10px;
+    background: white;
+    border: 2px solid #c8e6c9;
+    border-radius: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    min-width: 280px;
+    max-height: 400px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.categories-menu.show {
+    display: block;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-bottom: 1px solid #e8f5e9;
+}
+
+.category-item:last-child {
+    border-bottom: none;
+}
+
+.category-item:hover {
+    background-color: #e8f5e9;
+}
+
+.category-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: #4caf50;
+}
+
+.category-item label {
+    flex: 1;
+    cursor: pointer;
+    color: #2e7d32;
+    font-weight: 500;
+}
+
+.category-count {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.filter-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border-radius: 30px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.btn-secondary {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border: 2px solid #6c757d;
+}
+
+.btn-secondary:hover {
+    background-color: #6c757d;
+    color: white;
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+}
+
+.dot-green { background-color: green; }
+.dot-orange { background-color: orange; }
+.dot-red { background-color: red; }
+.dot-blue { background-color: blue; }
+.dot-darkred { background-color: darkred; }
+.dot-gray { background-color: gray; }
+
+.instruction-box {
+    text-align: center;
+    margin: 20px 0;
+    padding: 15px;
+    background: #e3f2fd;
+    border-radius: 8px;
+}
+
+.instruction-box p {
+    margin: 0;
+    color: #0b5e9e;
+}
+
+.login-prompt {
+    text-align: center;
+    margin: 20px 0;
+    padding: 15px;
+    background: #fff3cd;
+    border-radius: 8px;
+}
+
+.login-prompt p {
+    margin: 0;
+}
+
+.login-prompt a {
+    color: #2e7d32;
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.login-prompt a:hover {
+    text-decoration: underline;
+}
+
+.ymaps-logo {
+    display: none !important;
+}
+
+.error-message {
+    color: #dc3545;
+    padding: 20px;
+    text-align: center;
+    background: #f8d7da;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+/* Стили для скроллбара в меню категорий */
+.categories-menu::-webkit-scrollbar {
+    width: 8px;
+}
+
+.categories-menu::-webkit-scrollbar-track {
+    background: #e8f5e9;
+    border-radius: 0 20px 20px 0;
+}
+
+.categories-menu::-webkit-scrollbar-thumb {
+    background: #a5d6a7;
+    border-radius: 4px;
+}
+
+.categories-menu::-webkit-scrollbar-thumb:hover {
+    background: #81c784;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .categories-menu {
+        min-width: 250px;
+        max-width: 300px;
+    }
+
+    .category-item {
+        padding: 10px 15px;
+    }
+
+    .legend {
+        gap: 10px;
+        padding: 15px;
+    }
+
+    .legend-item {
+        font-size: 0.9rem;
+    }
+
+    .filter-actions {
+        flex-direction: column;
+    }
+
+    .btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .filters {
+        padding: 15px;
+    }
+
+    .categories-trigger {
+        width: 100%;
+        justify-content: center;
+        padding: 10px 15px;
+        font-size: 1rem;
+    }
+
+    .categories-menu {
+        min-width: 100%;
+        max-width: 100%;
+    }
+}

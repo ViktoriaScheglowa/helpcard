@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+
+{% block title %}Добавить проблему{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <h1 style="margin-bottom: 1.5rem;">Добавить новую проблему</h1>
+
+    <form method="post" style="background: white; padding: 2rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        {% csrf_token %}
+
+        <!-- Координаты будут переданы из JavaScript -->
+        <input type="hidden" id="latitude" name="latitude" value="{{ request.GET.lat|default:'' }}">
+        <input type="hidden" id="longitude" name="longitude" value="{{ request.GET.lng|default:'' }}">
+
+        <div class="form-group">
+            <label for="category_id">Категория *</label>
+            <select id="category_id" name="category_id" required>
+                <option value="">-- Выберите категорию --</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.display_name }}</option>
+                {% empty %}
+                    <option value="" disabled>Нет доступных категорий</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Описание проблемы *</label>
+            <textarea id="description" name="description" rows="5" required
+                      placeholder="Опишите проблему как можно подробнее..."></textarea>
+        </div>
+
+        <div class="form-group">
+            <label>Координаты:</label>
+            <p id="coordinates-display">
+                {% if request.GET.lat and request.GET.lng %}
+                    Широта: {{ request.GET.lat }}, Долгота: {{ request.GET.lng }}
+                {% else %}
+                    Координаты не выбраны
+                {% endif %}
+            </p>
+        </div>
+
+        <button type="submit" class="btn btn-success">Добавить проблему</button>
+        <a href="{% url 'helpcard:index' %}" class="btn" style="background: #6c757d; margin-left: 0.5rem;">Отмена</a>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Если координаты не переданы в URL, можно запросить геолокацию пользователя
+    document.addEventListener('DOMContentLoaded', function() {
+        const latField = document.getElementById('latitude');
+        const lngField = document.getElementById('longitude');
+        const coordDisplay = document.getElementById('coordinates-display');
+
+        // Если координаты не переданы в URL
+        if (!latField.value || !lngField.value) {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        latField.value = position.coords.latitude;
+                        lngField.value = position.coords.longitude;
+                        coordDisplay.textContent = `Широта: ${position.coords.latitude}, Долгота: ${position.coords.longitude} (ваше текущее местоположение)`;
+                    },
+                    function(error) {
+                        coordDisplay.innerHTML = '<span style="color: red;">Не удалось определить местоположение. Пожалуйста, выберите точку на карте.</span>';
+                    }
+                );
+            } else {
+                coordDisplay.innerHTML = '<span style="color: red;">Ваш браузер не поддерживает геолокацию. Пожалуйста, выберите точку на карте.</span>';
+            }
+        }
+    });
+</script>
+{% endblock %}

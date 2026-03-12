@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Проблема #{{ problem.id }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>Проблема #{{ problem.id }}</h1>
+        <a href="{% url 'helpcard:index' %}" class="btn" style="background-color: #6c757d;">← На карту</a>
+    </div>
+
+    <div style="background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        
+        <!-- Статус и категория -->
+        <div style="display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap;">
+            <span class="btn" style="background-color: 
+                {% if problem.status == 'new' %}#28a745
+                {% elif problem.status == 'in_progress' %}#17a2b8
+                {% elif problem.status == 'solved' %}#6c757d
+                {% else %}#dc3545{% endif %};
+                cursor: default; opacity: 1;">
+                Статус: {{ problem.get_status_display }}
+            </span>
+            <span class="btn" style="background-color: #6f42c1; cursor: default; opacity: 1;">
+                Категория: {{ problem.get_category_display }}
+            </span>
+        </div>
+
+        <!-- Информация о местоположении -->
+        <div style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <h3 style="margin-bottom: 10px;">📍 Местоположение</h3>
+            <p><strong>Координаты:</strong> {{ problem.latitude }}, {{ problem.longitude }}</p>
+            {% if problem.address %}
+                <p><strong>Адрес:</strong> {{ problem.address }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Описание проблемы -->
+        <div style="margin-bottom: 25px;">
+            <h3 style="margin-bottom: 10px;">📝 Описание</h3>
+            <p style="font-size: 1.1rem; line-height: 1.6;">{{ problem.description }}</p>
+        </div>
+
+        <!-- Информация о создателе и датах -->
+        <div style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+            <h3 style="margin-bottom: 10px;">ℹ️ Детали</h3>
+            <p><strong>Создал:</strong> {{ problem.created_by.username|default:"Неизвестно" }}</p>
+            <p><strong>Создана:</strong> {{ problem.created_at|date:"d.m.Y H:i" }}</p>
+            {% if problem.assigned_to %}
+                <p><strong>Исполнитель:</strong> {{ problem.assigned_to.username }}</p>
+            {% endif %}
+            {% if problem.assigned_at %}
+                <p><strong>Назначена:</strong> {{ problem.assigned_at|date:"d.m.Y H:i" }}</p>
+            {% endif %}
+            {% if problem.promised_deadline %}
+                <p><strong>Срок:</strong> {{ problem.promised_deadline|date:"d.m.Y" }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Кнопки действий для авторизованных пользователей -->
+        {% if user.is_authenticated %}
+            <div style="display: flex; gap: 15px; margin-top: 30px;">
+                {% if user.role == 'executor' and problem.status == 'new' %}
+                    <a href="{% url 'helpcard:take_problem' problem.id %}" class="btn btn-success" style="flex: 1;">
+                        Взять в работу
+                    </a>
+                {% endif %}
+                
+                {% if user.role == 'admin' or problem.assigned_to == user %}
+                    {% if problem.status != 'solved' %}
+                        <a href="{% url 'helpcard:complete_problem' problem.id %}" class="btn" style="flex: 1; background-color: #007bff;">
+                            Отметить решенной
+                        </a>
+                    {% endif %}
+                {% endif %}
+                
+                <a href="{% url 'helpcard:index' %}" class="btn" style="flex: 1; background-color: #6c757d;">
+                    Назад
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
